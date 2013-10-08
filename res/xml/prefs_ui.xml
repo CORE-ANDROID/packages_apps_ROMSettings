@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+	xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<PreferenceCategory
+		android:key="misc"
+		android:title="@string/misc_short">
+
+         <CheckBoxPreference
+			android:key="enable_volume_options"
+			android:title="@string/enable_volume_options" />
+
+         <CheckBoxPreference
+            android:key="disable_bootanimation"
+            android:title="@string/disable_bootanimation_title" />
+    
+	<CheckBoxPreference
+	android:key="rotate_180"
+	android:title="@string/rotate_180_title"
+	android:summary="@string/rotate_180_summary" />
+
+	<CheckBoxPreference
+            android:key="recent_kill_all"
+            android:title="@string/recent_kill_all"
+            android:summary="@string/recent_kill_all_summary" />
+
+	<CheckBoxPreference
+            android:key="ram_usage_bar"
+            android:title="@string/ram_bar"
+            android:summary="@string/ram_bar_summary" />
+
+	<CheckBoxPreference
+            android:key="vibrate_notif_expand"
+            android:title="@string/vibrate_notif_expand_title"
+            android:summary="@string/vibrate_notif_expand_summary" />
+
+	<ListPreference
+        android:key="less_notification_sounds"
+        android:title="@string/less_notification_sounds_title"
+        android:summary="@string/less_notification_sounds_summary"
+        android:entries="@array/less_notification_sounds_entries"
+        android:entryValues="@array/less_notification_sounds_values" />
+
+	<CheckBoxPreference
+			android:key="ime_switcher"
+			android:title="@string/ime_switcher_title"
+			android:summary="@string/ime_switcher_summary" />
+
+	<CheckBoxPreference
+            android:key="use_alt_resolver"
+            android:title="@string/alt_resolver"
+            android:summary="@string/alt_resolver_summary"
+            android:defaultValue="false" />
+
+    <CheckBoxPreference
+            android:key="mode_tabletui"
+            android:title="@string/tablet_ui"
+            android:summary="@string/tablet_ui_summary"
+            android:defaultValue="false" />
+
+	<CheckBoxPreference
+            android:key="show_overflow"
+            android:title="@string/show_overflow_title"
+            android:summary="@string/show_overflow_summary"
+            android:defaultValue="false" />
+
+	<CheckBoxPreference
+            android:key="force_dualpanel"
+            android:title="@string/multipane_ui"
+            android:summary="@string/multipane_ui_summary"
+            android:defaultValue="false" />
+
+        <Preference
+            android:key="lcd_density_setup"
+            android:title="@string/lcd_density_title"
+            android:summary="@string/lcd_density_summary" />
+
+	</PreferenceCategory>
+
+</PreferenceScreen>
