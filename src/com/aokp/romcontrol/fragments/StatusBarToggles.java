@@ -1,152 +1,388 @@
-
 package com.aokp.romcontrol.fragments;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.FragmentTransaction;
-import android.app.ListFragment;
+import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
+import android.content.CursorLoader;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnMultiChoiceClickListener;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
+import android.database.ContentObserver;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.StateListDrawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
 import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceGroup;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceScreen;
+import android.provider.ContactsContract;
+import android.provider.MediaStore;
 import android.provider.Settings;
-import android.content.res.Configuration;
+import android.text.TextUtils;
 import android.util.Log;
+import android.util.StateSet;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.ListView;
-import android.widget.TextView;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.Toast;
 
+import com.android.internal.util.aokp.AwesomeConstants;
+import com.android.internal.util.aokp.AwesomeConstants.AwesomeConstant;
+import com.android.internal.util.aokp.NavBarHelpers;
 import com.aokp.romcontrol.AOKPPreferenceFragment;
 import com.aokp.romcontrol.R;
-import com.aokp.romcontrol.widgets.TouchInterceptor;
-import com.aokp.romcontrol.widgets.SeekBarPreference;
-import com.scheffsblend.smw.Preferences.ImageListPreference;
-import net.margaritov.preference.colorpicker.ColorPickerPreference;
+import com.aokp.romcontrol.objects.EasyPair;
+import com.aokp.romcontrol.util.ShortcutPickerHelper;
+import com.aokp.romcontrol.util.Helpers;
+import com.aokp.romcontrol.widgets.CustomTogglePref;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-public class StatusBarToggles extends AOKPPreferenceFragment implements OnPreferenceChangeListener {
+public class StatusBarToggles extends AOKPPreferenceFragment implements
+        OnPreferenceChangeListener, ShortcutPickerHelper.OnPickListener {
 
     private static final String TAG = "TogglesLayout";
 
     private static final String PREF_ENABLE_TOGGLES = "enabled_toggles";
-    private static final String PREF_BRIGHTNESS_LOC = "brightness_location";
-    private static final String PREF_TOGGLES_STYLE = "toggle_style";
-    private static final String PREF_ALT_BUTTON_LAYOUT = "toggles_layout_preference";
-    private static final String PREF_TOGGLE_BTN_ENABLED_COLOR = "toggle_btn_enabled_color";
-    private static final String PREF_TOGGLE_BTN_DISABLED_COLOR = "toggle_btn_disabled_color";
-    private static final String PREF_TOGGLE_BTN_ALPHA = "toggle_btn_alpha";
-	private static final String PREF_HAPTIC_FEEDBACK_TOGGLES_ENABLED = "toggles_haptic_feedback";
-	private static final String PREF_SETTINGS_BUTTON_BEHAVIOR = "settings_behavior";
-    private static final String PREF_TOGGLES_AUTOHIDE = "toggles_autohide";
+    private static final String PREF_COLLAPSE_ALL = "collapse_shade_all";
+    private static final String PREF_TOGGLE_VIBRATE = "quick_toggle_vibrate";
+    private static final String PREF_TOGGLES_PER_ROW = "toggles_per_row";
+    private static final String PREF_TOGGLES_STYLE = "toggles_style";
+    private static final String PREF_TOGGLE_FAV_CONTACT = "toggle_fav_contact";
+    private static final String PREF_ENABLE_FASTTOGGLE = "enable_fast_toggle";
+    private static final String PREF_CHOOSE_FASTTOGGLE_SIDE = "choose_fast_toggle_side";
+    private static final String PREF_SCREENSHOT_DELAY = "screenshot_delay";
+    private static final String PREF_SET_BOOT_ACTION = "set_boot_action";
+    private static final String PREF_MATCH_ICON_ACTION = "match_icon_action";
+    private static final String PREF_COLLAPSE_BAR = "collapse_bar";
+    private static final String PREF_DCLICK_ACTION = "dclick_action";
+    private static final String PREF_CUSTOM_TOGGLE = "custom_toggle_pref";
+    private static final String PREF_CUSTOM_CAT = "custom_toggle";
+    private static final String PREF_CUSTOM_BUTTONS = "custom_buttons";
+
+    private final int PICK_CONTACT = 1;
+
+    public static final int REQUEST_PICK_CUSTOM_ICON = 200;
+
+    private static boolean mTogglesAreSorted = false;
+
+    private Resources mResources;
+    private PackageManager mPackMan;
 
     Preference mEnabledToggles;
     Preference mLayout;
-    ListPreference mBrightnessLocation;
-    ImageListPreference mTogglesLayout;
-    ListPreference mToggleStyle;
-    Preference mResetToggles;
-    SeekBarPreference mToggleBtnAlpha;
-    ColorPickerPreference mBtnEnabledColor;
-    ColorPickerPreference mBtnDisabledColor;
-	CheckBoxPreference mHapticFeedback;
-	CheckBoxPreference mDefaultSettingsButtonBehavior;
-    CheckBoxPreference mTogglesAutoHide;
+    CheckBoxPreference mCollapseAll;
+    CheckBoxPreference mToggleVibrate;
+    ListPreference mTogglesPerRow;
+    ListPreference mTogglesStyle;
+    Preference mFavContact;
+    CheckBoxPreference mFastToggle;
+    CheckBoxPreference mBootState;
+    CheckBoxPreference mMatchAction;
+    ListPreference mChooseFastToggleSide;
+    ListPreference mScreenshotDelay;
+    ListPreference mCollapseShade;
+    ListPreference mOnDoubleClick;
+    CustomTogglePref mCustomToggles;
+    PreferenceGroup mCustomCat;
+    PreferenceGroup mCustomButtons;
+
+    BroadcastReceiver mReceiver;
+    ArrayList<String> mToggles;
+
+    // Custom Toggle Stuff
+    private int mNumberofToggles = 0;
+    ArrayList<ToggleButton> mButtons = new ArrayList<ToggleButton>();
+    ArrayList<ImageButton> mButtonViews = new ArrayList<ImageButton>();
+    String[] mActions;
+    String[] mActionCodes;
+    private int mPendingToggle = -1;
+    private ImageButton mAddButton, mResetButton, mSaveButton;
+    private ShortcutPickerHelper mPicker;
+
+    static Bundle sToggles;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mReceiver = new BroadcastReceiver() {
 
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.hasExtra("toggle_bundle")) {
+                    onTogglesUpdate(intent.getBundleExtra("toggle_bundle"));
+                }
+            }
+        };
+        mContext.registerReceiver(mReceiver,
+                new IntentFilter("com.android.systemui.statusbar.toggles.ACTION_BROADCAST_TOGGLES"));
+        requestAvailableToggles();
+        setTitle(R.string.title_statusbar_toggles);
         // Load the preferences from an XML resource
         addPreferencesFromResource(R.xml.prefs_statusbar_toggles);
 
-		mHapticFeedback = (CheckBoxPreference) findPreference(PREF_HAPTIC_FEEDBACK_TOGGLES_ENABLED);
-        mHapticFeedback.setChecked(Settings.System.getBoolean(getActivity().getContentResolver(),
-                Settings.System.HAPTIC_FEEDBACK_TOGGLES_ENABLED, false));
+        mPicker = new ShortcutPickerHelper(this, this);
+        mPackMan = getPackageManager();
+        mResources = mContext.getResources();
+
+        // Get Toggle Actions
+        mActionCodes = NavBarHelpers.getNavBarActions();
+        mActions = new String[mActionCodes.length];
+        int actionqty = mActions.length;
+        for (int i = 0; i < actionqty; i++) {
+            mActions[i] = AwesomeConstants.getProperName(mContext, mActionCodes[i]);
+        }
 
         mEnabledToggles = findPreference(PREF_ENABLE_TOGGLES);
 
-        mBrightnessLocation = (ListPreference) findPreference(PREF_BRIGHTNESS_LOC);
-        mBrightnessLocation.setOnPreferenceChangeListener(this);
-        mBrightnessLocation.setValue(Integer.toString(Settings.System.getInt(getActivity()
-                .getContentResolver(), Settings.System.STATUSBAR_TOGGLES_BRIGHTNESS_LOC, 3)));
+        mCollapseAll = (CheckBoxPreference) findPreference(PREF_COLLAPSE_ALL);
+        mCollapseAll.setOnPreferenceChangeListener(this);
 
-        int mTabletui = Settings.System.getInt(mContext.getContentResolver(),
-                           Settings.System.TABLET_UI, 0);
+        mToggleVibrate = (CheckBoxPreference) findPreference(PREF_TOGGLE_VIBRATE);
+        mToggleVibrate.setOnPreferenceChangeListener(this);
 
-        if (mTabletui == 1) {
-            ((PreferenceGroup) findPreference("advanced_cat")).removePreference(mBrightnessLocation);
-        }
+        mTogglesPerRow = (ListPreference) findPreference(PREF_TOGGLES_PER_ROW);
+        mTogglesPerRow.setOnPreferenceChangeListener(this);
+        mTogglesPerRow.setValue(Settings.System.getInt(mContentRes,
+                Settings.System.QUICK_TOGGLES_PER_ROW, 3) + "");
 
-        mToggleStyle = (ListPreference) findPreference(PREF_TOGGLES_STYLE);
-        mToggleStyle.setOnPreferenceChangeListener(this);
-        mToggleStyle.setValue(Integer.toString(Settings.System.getInt(getActivity()
-                .getContentResolver(), Settings.System.STATUSBAR_TOGGLES_STYLE, 3)));
-
-        mTogglesLayout = (ImageListPreference) findPreference(PREF_ALT_BUTTON_LAYOUT);
-        mTogglesLayout.setOnPreferenceChangeListener(this);
-
-        mBtnEnabledColor = (ColorPickerPreference) findPreference(
-                PREF_TOGGLE_BTN_ENABLED_COLOR);
-        mBtnEnabledColor.setOnPreferenceChangeListener(this);
-
-        mBtnDisabledColor = (ColorPickerPreference) findPreference(
-                PREF_TOGGLE_BTN_DISABLED_COLOR);
-        mBtnDisabledColor.setOnPreferenceChangeListener(this);
-
-        float btnAlpha = Settings.System.getFloat(getActivity()
-                .getContentResolver(),
-                Settings.System.STATUSBAR_TOGGLES_ALPHA, 0.7f);
-        mToggleBtnAlpha = (SeekBarPreference) findPreference(PREF_TOGGLE_BTN_ALPHA);
-        mToggleBtnAlpha.setInitValue((int) (btnAlpha * 100));
-        mToggleBtnAlpha.setOnPreferenceChangeListener(this);
-
-		mDefaultSettingsButtonBehavior = (CheckBoxPreference) findPreference(PREF_SETTINGS_BUTTON_BEHAVIOR);
-        mDefaultSettingsButtonBehavior.setChecked(Settings.System.getBoolean(mContext
-                .getContentResolver(), Settings.System.STATUSBAR_SETTINGS_BEHAVIOR, true));
-            if (mDefaultSettingsButtonBehavior.isChecked()) {
-                mDefaultSettingsButtonBehavior.setSummary(R.string.summary_settings_behavior_default);
-            } else {
-                mDefaultSettingsButtonBehavior.setSummary(R.string.summary_settings_behavior_reverse);
-            }
-
-        mTogglesAutoHide = (CheckBoxPreference) findPreference(PREF_TOGGLES_AUTOHIDE);
-        mTogglesAutoHide.setChecked(Settings.System.getBoolean(mContext
-                .getContentResolver(), Settings.System.STATUSBAR_TOGGLES_AUTOHIDE, false));
+        mTogglesStyle = (ListPreference) findPreference(PREF_TOGGLES_STYLE);
+        mTogglesStyle.setOnPreferenceChangeListener(this);
+        mTogglesStyle.setValue(String.valueOf(Settings.System.getInt(mContentRes,
+                Settings.System.TOGGLES_STYLE, 0)));
 
         mLayout = findPreference("toggles");
 
-        mResetToggles = findPreference("reset_toggles");
+        mFavContact = findPreference(PREF_TOGGLE_FAV_CONTACT);
 
+        mFastToggle = (CheckBoxPreference) findPreference(PREF_ENABLE_FASTTOGGLE);
+        mFastToggle.setOnPreferenceChangeListener(this);
+
+        mChooseFastToggleSide = (ListPreference) findPreference(PREF_CHOOSE_FASTTOGGLE_SIDE);
+        mChooseFastToggleSide.setOnPreferenceChangeListener(this);
+        mChooseFastToggleSide.setValue(Settings.System.getInt(mContentRes,
+                Settings.System.CHOOSE_FASTTOGGLE_SIDE, 1) + "");
+
+        mScreenshotDelay = (ListPreference) findPreference(PREF_SCREENSHOT_DELAY);
+        mScreenshotDelay.setOnPreferenceChangeListener(this);
+        mScreenshotDelay.setValue(String.valueOf(Settings.System.getInt(mContentRes,
+                Settings.System.SCREENSHOT_TOGGLE_DELAY, 5000)));
+
+        mBootState = (CheckBoxPreference) findPreference(PREF_SET_BOOT_ACTION);
+        mBootState.setOnPreferenceChangeListener(this);
+
+        mMatchAction = (CheckBoxPreference) findPreference(PREF_MATCH_ICON_ACTION);
+        mMatchAction.setOnPreferenceChangeListener(this);
+
+        mCollapseShade = (ListPreference) findPreference(PREF_COLLAPSE_BAR);
+        mCollapseShade.setOnPreferenceChangeListener(this);
+        mCollapseShade.setValue(Settings.System.getInt(mContentRes,
+                Settings.System.COLLAPSE_SHADE, 10) + "");
+
+        mOnDoubleClick = (ListPreference) findPreference(PREF_DCLICK_ACTION);
+        mOnDoubleClick.setOnPreferenceChangeListener(this);
+        mOnDoubleClick.setValue(Settings.System.getInt(mContentRes,
+                Settings.System.DCLICK_TOGGLE_REVERT, 0) + "");
+
+        mCustomToggles = (CustomTogglePref) findPreference(PREF_CUSTOM_TOGGLE);
+        mCustomToggles.setParent(this);
+
+        mCustomCat = (PreferenceGroup) findPreference(PREF_CUSTOM_CAT);
+        mCustomButtons = (PreferenceGroup) findPreference(PREF_CUSTOM_BUTTONS);
+
+        if (isSW600DPScreen(mContext) || isTablet(mContext)) {
+            getPreferenceScreen().removePreference(mFastToggle);
+            getPreferenceScreen().removePreference(mChooseFastToggleSide);
+        }
+
+        if (Integer.parseInt(mTogglesStyle.getValue()) > 1) {
+            mFastToggle.setEnabled(false);
+            mTogglesPerRow.setEnabled(false);
+        }
+
+        if (!hasVibration) {
+            getPreferenceScreen().removePreference(mToggleVibrate);
+        }
+
+        new SettingsObserver(new Handler()).observe();
+        refreshSettings();
+    }
+
+    static ArrayList<EasyPair<String, String>> buildToggleMap(Bundle toggleInfo) {
+        ArrayList<String> _toggleIdents = toggleInfo.getStringArrayList("toggles");
+        ArrayList<EasyPair<String, String>> _toggles = new ArrayList<EasyPair<String, String>>();
+        for (String _ident : _toggleIdents) {
+            _toggles.add(new EasyPair<String, String>(_ident, toggleInfo.getString(_ident)));
+        }
+        return _toggles;
+    }
+
+    private void onTogglesUpdate(Bundle toggleInfo) {
+        mToggles = toggleInfo.getStringArrayList("toggles");
+        sToggles = toggleInfo;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        requestAvailableToggles();
+        refreshSettings();
+    }
+
+    @Override
+    public void onDestroy() {
+        if (mReceiver != null) {
+            mContext.unregisterReceiver(mReceiver);
+            mReceiver = null;
+        }
+        super.onDestroy();
+    }
+
+    private void requestAvailableToggles() {
+        Intent request = new Intent("com.android.systemui.statusbar.toggles.ACTION_REQUEST_TOGGLES");
+        mContext.sendBroadcast(request);
+    }
+
+    @Override
+    public boolean onPreferenceChange(Preference preference, Object newValue) {
+        if (preference == mTogglesPerRow) {
+            int val = Integer.parseInt((String) newValue);
+            Settings.System.putInt(mContentRes,
+                    Settings.System.QUICK_TOGGLES_PER_ROW, val);
+        } else if (preference == mCollapseAll) {
+            boolean val = (Boolean) newValue;
+            Settings.System.putBoolean(mContentRes,
+                    Settings.System.SHADE_COLLAPSE_ALL, val);
+            mContentRes.notifyChange(Settings.System.getUriFor(Settings.System.SHADE_COLLAPSE_ALL), null);
+            return true;
+        } else if (preference == mToggleVibrate) {
+            boolean val = (Boolean) newValue;
+            Settings.System.putBoolean(mContentRes,
+                    Settings.System.QUICK_TOGGLE_VIBRATE, val);
+            mContentRes.notifyChange(Settings.System.getUriFor(Settings.System.QUICK_TOGGLE_VIBRATE), null);
+            return true;
+        } else if (preference == mTogglesStyle) {
+            int val = Integer.parseInt((String) newValue);
+            Settings.System.putInt(mContentRes,
+                    Settings.System.TOGGLES_STYLE, val);
+            mTogglesStyle.setValue((String) newValue);
+            mFastToggle.setEnabled(val > 1 ? false : true);
+            mTogglesPerRow.setEnabled(val > 1 ? false : true);
+            Helpers.restartSystemUI();
+        } else if (preference == mScreenshotDelay) {
+            int val = Integer.parseInt((String) newValue);
+            Settings.System.putInt(mContentRes,
+                    Settings.System.SCREENSHOT_TOGGLE_DELAY, val);
+            mScreenshotDelay.setValue((String) newValue);
+        } else if (preference == mFastToggle) {
+            boolean val = (Boolean) newValue;
+            Settings.System.putBoolean(mContentRes,
+                    Settings.System.FAST_TOGGLE, val);
+            mContentRes.notifyChange(Settings.System.getUriFor(Settings.System.FAST_TOGGLE), null);
+            return true;
+        } else if (preference == mChooseFastToggleSide) {
+            int val = Integer.parseInt((String) newValue);
+            Settings.System.putInt(mContentRes,
+                    Settings.System.CHOOSE_FASTTOGGLE_SIDE, val);
+            mContentRes.notifyChange(
+                    Settings.System.getUriFor(Settings.System.CHOOSE_FASTTOGGLE_SIDE), null);
+            mChooseFastToggleSide.setValue(Settings.System.getInt(mContentRes,
+                    Settings.System.CHOOSE_FASTTOGGLE_SIDE, 1) + "");
+        } else if (preference == mBootState) {
+            boolean val = (Boolean) newValue;
+            Settings.System.putBoolean(mContentRes,
+                    Settings.System.CUSTOM_TOGGLE_REVERT, val);
+            mContentRes.notifyChange(
+                    Settings.System.getUriFor(Settings.System.CUSTOM_TOGGLE_REVERT), null);
+            return true;
+        } else if (preference == mMatchAction) {
+            boolean val = (Boolean) newValue;
+            Settings.System.putBoolean(mContentRes,
+                    Settings.System.MATCH_ACTION_ICON, val);
+            mContentRes.notifyChange(Settings.System.getUriFor(Settings.System.MATCH_ACTION_ICON),
+                    null);
+            return true;
+        } else if (preference == mCollapseShade) {
+            int val = Integer.parseInt((String) newValue);
+            Settings.System.putInt(mContentRes,
+                    Settings.System.COLLAPSE_SHADE, val);
+            return true;
+        } else if (preference == mOnDoubleClick) {
+            int val = Integer.parseInt((String) newValue);
+            Settings.System.putInt(mContentRes,
+                    Settings.System.DCLICK_TOGGLE_REVERT, val);
+            return true;
+        }
+        return true;
     }
 
     @Override
     public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen, Preference preference) {
         if (preference == mEnabledToggles) {
+            if (mToggles == null || mToggles.isEmpty()) {
+                return false;
+            }
             AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
 
-            ArrayList<String> enabledToggles = getTogglesStringArray(getActivity());
+            final ArrayList<String> userToggles = getEnabledToggles(mContext);
+            final ArrayList<String> availableToggles = new ArrayList<String>();
+            for (String t : mToggles) {
+                availableToggles.add(t);
+            }
 
-            final String[] finalArray = getResources().getStringArray(
-                    R.array.available_toggles_entries);
-            final String[] values = getResources().getStringArray(R.array.available_toggles_values);
+            // final String[] finalArray = getResources().getStringArray(
+            // R.array.available_toggles_entries);
+            final String[] toggleValues = new String[availableToggles.size()];
+            for (int i = 0; i < availableToggles.size(); i++) {
+                toggleValues[i] = StatusBarToggles.lookupToggle(mContext, availableToggles.get(i));
+            }
 
-            boolean checkedToggles[] = new boolean[finalArray.length];
+            final boolean checkedToggles[] = new boolean[availableToggles.size()];
 
+            boolean anyChecked = false;
             for (int i = 0; i < checkedToggles.length; i++) {
-                if (enabledToggles.contains(finalArray[i])) {
+                String selectedToggle = availableToggles.get(i);
+                if (userToggles.contains(selectedToggle)) {
+                    Log.d(TAG, "found toggle: " + selectedToggle);
                     checkedToggles[i] = true;
+                    anyChecked = true;
                 }
+            }
+            if (!anyChecked) {
+                // no toggles are checked, wipe the setting to be sure
+                Settings.System.putString(mContentRes, Settings.System.QUICK_TOGGLES, "");
             }
 
             builder.setTitle(R.string.toggles_display_dialog);
@@ -159,301 +395,614 @@ public class StatusBarToggles extends AOKPPreferenceFragment implements OnPrefer
                             dialog.dismiss();
                         }
                     });
-            builder.setMultiChoiceItems(values, checkedToggles, new OnMultiChoiceClickListener() {
+            builder.setMultiChoiceItems(toggleValues, checkedToggles,
+                    new OnMultiChoiceClickListener() {
 
-                @Override
-                public void onClick(DialogInterface dialog, int which, boolean isChecked) {
-                    String toggleKey = (finalArray[which]);
-
-                    if (isChecked)
-                        addToggle(getActivity(), toggleKey);
-                    else
-                        removeToggle(getActivity(), toggleKey);
-                }
-            });
+                        @Override
+                        public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+                            String toggleKey = availableToggles.get(which);
+                            if (isChecked) {
+                                StatusBarToggles.addToggle(getActivity(), toggleKey);
+                            }
+                            else {
+                                StatusBarToggles.removeToggle(getActivity(), toggleKey);
+                            }
+                        }
+                    });
 
             AlertDialog d = builder.create();
 
             d.show();
 
             return true;
-		} else if (preference == mHapticFeedback) {
-            Settings.System.putBoolean(getActivity().getContentResolver(),
-                    Settings.System.HAPTIC_FEEDBACK_TOGGLES_ENABLED,
-                    ((CheckBoxPreference) preference).isChecked());
-            return true;
         } else if (preference == mLayout) {
-            FragmentTransaction ft = getFragmentManager().beginTransaction();
-            TogglesLayout fragment = new TogglesLayout();
-            ft.addToBackStack("toggles_layout");
-            ft.replace(this.getId(), fragment);
-            ft.commit();
-
-        } else if (preference == mResetToggles) {
-            Settings.System.putString(getActivity().getContentResolver(),
-                    Settings.System.STATUSBAR_TOGGLES, "WIFI");
-            return true;
-		} else if (preference == mTogglesAutoHide) {
-
-            Settings.System.putBoolean(mContext.getContentResolver(),
-                    Settings.System.STATUSBAR_TOGGLES_AUTOHIDE,
-                    ((CheckBoxPreference) preference).isChecked() ? true : false);
-            return true;
-        } else if (preference == mDefaultSettingsButtonBehavior) {
-
-            Settings.System.putBoolean(mContext.getContentResolver(),
-                    Settings.System.STATUSBAR_SETTINGS_BEHAVIOR,
-                    ((CheckBoxPreference) preference).isChecked() ? true : false);
-            if (mDefaultSettingsButtonBehavior.isChecked()) {
-                mDefaultSettingsButtonBehavior.setSummary(R.string.summary_settings_behavior_default);
-            } else {
-                mDefaultSettingsButtonBehavior.setSummary(R.string.summary_settings_behavior_reverse);
-            }
-            return true;
+            ArrangeTogglesFragment fragment = ArrangeTogglesFragment.newInstance(sToggles);
+            fragment.show(getFragmentManager(), "arrange");
+        } else if (preference == mFavContact) {
+            Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+            startActivityForResult(intent, PICK_CONTACT);
+        } else if ("custom_toggle_help".equals(preference.getKey())) {
+            AlertDialog.Builder ad = new AlertDialog.Builder(getActivity());
+            ad.setTitle(getResources().getString(R.string.custom_help_title));
+            ad.setMessage(getResources().getString(R.string.custom_toggle_desc));
+            ad.setPositiveButton(
+                    getResources().getString(R.string.custom_toggle_okay),
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+            ad.show();
         }
         return super.onPreferenceTreeClick(preferenceScreen, preference);
+    }
 
+    public void refreshSettings() {
+        refreshButtons();
+    }
+
+    public void setupToggleViews(LinearLayout container) {
+        mResetButton = (ImageButton) container.findViewById(R.id.reset_button);
+        mResetButton.setOnClickListener(mCommandButtons);
+        mAddButton = (ImageButton) container.findViewById(R.id.add_button);
+        mAddButton.setOnClickListener(mCommandButtons);
+        mSaveButton = (ImageButton) container.findViewById(R.id.save_button);
+        mSaveButton.setOnClickListener(mCommandButtons);
+        mButtonViews.clear();
+        LinearLayout llbuttons = (LinearLayout) container.findViewById(R.id.toggle_container);
+        for (int i = 0; i < llbuttons.getChildCount(); i++) {
+            ImageButton ib = (ImageButton) llbuttons.getChildAt(i);
+            mButtonViews.add(ib);
+        }
+        if (mButtons.size() == 0) {
+            loadButtons();
+        }
+        refreshButtons();
+    }
+
+    private View.OnClickListener mToggleClickListener = new View.OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            mPendingToggle = mButtonViews.indexOf(v);
+            if (mPendingToggle > -1 && mPendingToggle < mNumberofToggles) {
+                createDialog(mButtons.get(mPendingToggle));
+            }
+        }
+    };
+
+    private void loadButtons() {
+        mNumberofToggles = Settings.System.getInt(mContentRes,
+                Settings.System.CUSTOM_TOGGLE_QTY, 3);
+        mButtons.clear();
+        for (int i = 0; i < mNumberofToggles; i++) {
+            String click = Settings.System.getString(mContentRes,
+                    Settings.System.CUSTOM_PRESS_TOGGLE[i]);
+            String longclick = Settings.System.getString(mContentRes,
+                    Settings.System.CUSTOM_LONGPRESS_TOGGLE[i]);
+            String iconuri = Settings.System.getString(mContentRes,
+                    Settings.System.CUSTOM_TOGGLE_ICONS[i]);
+            mButtons.add(new ToggleButton(click, longclick, iconuri));
+        }
+    }
+
+    public void refreshButtons() {
+        if (mNumberofToggles == 0) {
+            return;
+        }
+        for (int i = 0; i < mNumberofToggles; i++) {
+            ImageButton ib = mButtonViews.get(i);
+            Drawable d = mButtons.get(i).getIcon();
+            ib.setImageDrawable(d);
+            ib.setOnClickListener(mToggleClickListener);
+            ib.setVisibility(View.VISIBLE);
+        }
+        for (int i = mNumberofToggles; i < mButtonViews.size(); i++) {
+            ImageButton ib = mButtonViews.get(i);
+            ib.setVisibility(View.GONE);
+        }
+    }
+
+    private void saveButtons() {
+        Settings.System.putInt(mContentRes, Settings.System.CUSTOM_TOGGLE_QTY,
+                mNumberofToggles);
+        for (int i = 0; i < mNumberofToggles; i++) {
+            ToggleButton button = mButtons.get(i);
+            Settings.System.putString(mContentRes, Settings.System.CUSTOM_PRESS_TOGGLE[i],
+                    button.getClickAction());
+            Settings.System.putString(mContentRes, Settings.System.CUSTOM_LONGPRESS_TOGGLE[i],
+                    button.getLongAction());
+            Settings.System.putString(mContentRes, Settings.System.CUSTOM_TOGGLE_ICONS[i],
+                    button.getIconURI());
+        }
+    }
+
+    private void createDialog(final ToggleButton button) {
+        final DialogInterface.OnClickListener l = new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int item) {
+                onDialogClick(button, item);
+                dialog.dismiss();
+            }
+        };
+
+        String action = mResources.getString(R.string.navbar_actiontitle_menu);
+        String longpress = mResources.getString(R.string.navbar_longpress_menu);
+        longpress = String.format(longpress, button.getLongName());
+        action = String.format(action, button.getClickName());
+        String[] items = {
+                action, longpress,
+                mResources.getString(R.string.navbar_icon_menu),
+                mResources.getString(R.string.navbar_delete_menu)
+        };
+        final AlertDialog dialog = new AlertDialog.Builder(mContext)
+                .setTitle(mResources.getString(R.string.navbar_title_menu))
+                .setItems(items, l)
+                .create();
+        dialog.show();
+    }
+
+    private void createActionDialog(final ToggleButton button) {
+        final DialogInterface.OnClickListener l = new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int item) {
+                onActionDialogClick(button, item);
+                dialog.dismiss();
+            }
+        };
+
+        final AlertDialog dialog = new AlertDialog.Builder(mContext)
+                .setTitle(mResources.getString(R.string.navbar_title_menu))
+                .setItems(mActions, l)
+                .create();
+
+        dialog.show();
+    }
+
+    private void onDialogClick(ToggleButton button, int command) {
+        switch (command) {
+            case 0: // Set Click Action
+                button.setPickLongPress(false);
+                createActionDialog(button);
+                break;
+            case 1: // Set Long Press Action
+                button.setPickLongPress(true);
+                createActionDialog(button);
+                break;
+            case 2: // set Custom Icon
+                int width = 100;
+                int height = width;
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT, null);
+                intent.setType("image/*");
+                intent.putExtra("crop", "true");
+                intent.putExtra("aspectX", width);
+                intent.putExtra("aspectY", height);
+                intent.putExtra("outputX", width);
+                intent.putExtra("outputY", height);
+                intent.putExtra("scale", true);
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, getTempFileUri());
+                intent.putExtra("outputFormat", Bitmap.CompressFormat.PNG.toString());
+                Log.i(TAG, "started for result, should output to: " + getTempFileUri());
+                startActivityForResult(intent, REQUEST_PICK_CUSTOM_ICON);
+                break;
+            case 3: // Delete Button
+                mButtons.remove(mPendingToggle);
+                mNumberofToggles--;
+                break;
+        }
+        refreshButtons();
+    }
+
+    private void onActionDialogClick(ToggleButton button, int command) {
+        if (command == mActions.length - 1) {
+            // This is the last action - should be **app**
+            mPicker.pickShortcut();
+        } else { // This should be any other defined action.
+            if (button.getPickLongPress()) {
+                button.setLongPress(mActionCodes[command]);
+            } else {
+                button.setClickAction(mActionCodes[command]);
+            }
+        }
+        refreshButtons();
+    }
+
+    private View.OnClickListener mCommandButtons = new View.OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            int command = v.getId();
+            switch (command) {
+                case R.id.reset_button:
+                    loadButtons();
+                    break;
+                case R.id.add_button:
+                    if (mNumberofToggles < 5) { // Maximum Toggles is 5
+                        mButtons.add(new ToggleButton("**null**", "**null**", ""));
+                        mNumberofToggles++;
+                    }
+                    break;
+                case R.id.save_button:
+                    saveButtons();
+                    break;
+            }
+            refreshButtons();
+        }
+    };
+
+    private Drawable setIcon(String uri, String action) {
+        if (uri != null && uri.length() > 0) {
+            File f = new File(Uri.parse(uri).getPath());
+            if (f.exists())
+                return resize(new BitmapDrawable(mResources, f.getAbsolutePath()));
+        }
+        if (uri != null && !uri.equals("")
+                && uri.startsWith("file")) {
+            // it's an icon the user chose from the gallery here
+            File icon = new File(Uri.parse(uri).getPath());
+            if (icon.exists())
+                return resize(new BitmapDrawable(mResources, icon
+                        .getAbsolutePath()));
+
+        } else if (uri != null && !uri.equals("")) {
+            // here they chose another app icon
+            try {
+                return resize(mPackMan.getActivityIcon(Intent.parseUri(uri, 0)));
+            } catch (NameNotFoundException e) {
+                e.printStackTrace();
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            }
+            // ok use default icons here
+        }
+        return resize(getNavbarIconImage(action));
+    }
+
+    private Drawable getNavbarIconImage(String uri) {
+        if (uri == null)
+            uri = AwesomeConstant.ACTION_NULL.value();
+        if (uri.startsWith("**")) {
+            return AwesomeConstants.getActionIcon(mContext, uri);
+        } else {
+            try {
+                return mPackMan.getActivityIcon(Intent.parseUri(uri, 0));
+            } catch (NameNotFoundException e) {
+                e.printStackTrace();
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            }
+        }
+        return mResources.getDrawable(R.drawable.ic_sysbar_null);
     }
 
     @Override
-    public boolean onPreferenceChange(Preference preference, Object newValue) {
-        boolean result = false;
+    public void shortcutPicked(String uri, String friendlyName, Bitmap bmp, boolean isApplication) {
+        ToggleButton button = mButtons.get(mPendingToggle);
+        boolean longpress = button.getPickLongPress();
 
-        if (preference == mBrightnessLocation) {
-            int val = Integer.parseInt((String) newValue);
-            result = Settings.System.putInt(getActivity().getContentResolver(),
-                    Settings.System.STATUSBAR_TOGGLES_BRIGHTNESS_LOC, val);
-        } else if (preference == mToggleStyle) {
-            int val = Integer.parseInt((String) newValue);
-            result = Settings.System.putInt(getActivity().getContentResolver(),
-                    Settings.System.STATUSBAR_TOGGLES_STYLE, val);
-        } else if (preference == mTogglesLayout) {
-            int val = Integer.parseInt((String) newValue);
-            Settings.System.putInt(getActivity().getContentResolver(),
-                    Settings.System.STATUSBAR_TOGGLES_STYLE, val == 0 ? 3 : 2);
-            result = Settings.System.putInt(getActivity().getContentResolver(),
-                    Settings.System.STATUSBAR_TOGGLES_USE_BUTTONS,
-                    val);
-        } else if (preference == mBtnEnabledColor) {
-            String hex = ColorPickerPreference.convertToARGB(
-                    Integer.valueOf(String.valueOf(newValue)));
-            preference.setSummary(hex);
-
-            int intHex = ColorPickerPreference.convertToColorInt(hex);
-            result = Settings.System.putInt(getActivity().getContentResolver(),
-                    Settings.System.STATUSBAR_TOGGLES_ENABLED_COLOR, intHex);
-        } else if (preference == mBtnDisabledColor) {
-            String hex = ColorPickerPreference.convertToARGB(
-                    Integer.valueOf(String.valueOf(newValue)));
-            preference.setSummary(hex);
-
-            int intHex = ColorPickerPreference.convertToColorInt(hex);
-            result = Settings.System.putInt(getActivity().getContentResolver(),
-                    Settings.System.STATUSBAR_TOGGLES_DISABLED_COLOR, intHex);
-        } else if (preference == mToggleBtnAlpha) {
-            float val = Float.parseFloat((String) newValue);
-            result = Settings.System.putFloat(getActivity().getContentResolver(),
-                    Settings.System.STATUSBAR_TOGGLES_ALPHA, val / 100);
+        if (!longpress) {
+            button.setClickAction(uri);
+        } else {
+            button.setLongPress(uri);
         }
-        return result;
+        if (bmp == null) {
+            button.setIconURI("");
+        } else {
+            String iconName = getIconFileName(mPendingToggle);
+            FileOutputStream iconStream = null;
+            try {
+                iconStream = mContext.openFileOutput(iconName, Context.MODE_WORLD_READABLE);
+            } catch (FileNotFoundException e) {
+                return; // NOOOOO
+            }
+            bmp.compress(Bitmap.CompressFormat.PNG, 100, iconStream);
+            button.setIconURI(Uri.fromFile(mContext.getFileStreamPath(iconName)).toString());
+        }
+        refreshButtons();
     }
 
-    public static void addToggle(Context context, String key) {
-        ArrayList<String> enabledToggles = getTogglesStringArray(context);
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.i(TAG, "RequestCode:" + resultCode);
+        if (resultCode == Activity.RESULT_OK) {
+            if (requestCode == PICK_CONTACT) {
+                Uri contactData = data.getData();
+                String[] projection = new String[] {
+                        ContactsContract.Contacts.LOOKUP_KEY
+                };
+                String selection = ContactsContract.Contacts.DISPLAY_NAME + " IS NOT NULL";
+                CursorLoader cursorLoader = new CursorLoader(getActivity().getBaseContext(),
+                        contactData, projection, selection, null, null);
+                Cursor cursor = cursorLoader.loadInBackground();
+                if (cursor != null) {
+                    try {
+                        if (cursor.moveToFirst()) {
+                            String lookup_key = cursor.getString(cursor
+                                    .getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
+                            Settings.System.putString(mContentRes,
+                                    Settings.System.QUICK_TOGGLE_FAV_CONTACT, lookup_key);
+                        }
+                    } finally {
+                        cursor.close();
+                    }
+                }
+            }
+
+            if (requestCode == ShortcutPickerHelper.REQUEST_PICK_SHORTCUT
+                    || requestCode == ShortcutPickerHelper.REQUEST_PICK_APPLICATION
+                    || requestCode == ShortcutPickerHelper.REQUEST_CREATE_SHORTCUT) {
+                mPicker.onActivityResult(requestCode, resultCode, data);
+
+            } else if (requestCode == REQUEST_PICK_CUSTOM_ICON) {
+                String iconName = getIconFileName(mPendingToggle);
+                FileOutputStream iconStream = null;
+                try {
+                    iconStream = mContext.openFileOutput(iconName, Context.MODE_WORLD_READABLE);
+                } catch (FileNotFoundException e) {
+                    return; // NOOOOO
+                }
+
+                Uri selectedImageUri = getTempFileUri();
+                try {
+                    Log.e(TAG, "Selected image path: " + selectedImageUri.getPath());
+                    Bitmap bitmap = BitmapFactory.decodeFile(selectedImageUri.getPath());
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, iconStream);
+                } catch (NullPointerException npe) {
+                    Log.e(TAG, "SeletedImageUri was null.");
+                    return;
+                }
+                mButtons.get(mPendingToggle).setIconURI(Uri.fromFile(
+                        new File(mContext.getFilesDir(), iconName)).getPath());
+
+                File f = new File(selectedImageUri.getPath());
+                if (f.exists())
+                    f.delete();
+                refreshButtons();
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private String getProperSummary(String uri) {
+        if (uri == null)
+            return AwesomeConstants.getProperName(mContext, "**null**");
+        if (uri.startsWith("**")) {
+            return AwesomeConstants.getProperName(mContext, uri);
+        } else {
+            return mPicker.getFriendlyNameForUri(uri);
+        }
+    }
+
+    private Drawable resize(Drawable image) {
+        int size = 50;
+        int px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, size,
+                mResources.getDisplayMetrics());
+
+        Bitmap d = ((BitmapDrawable) image).getBitmap();
+        if (d == null) {
+            return mResources.getDrawable(R.drawable.ic_sysbar_null);
+        } else {
+            Bitmap bitmapOrig = Bitmap.createScaledBitmap(d, px, px, false);
+            return new BitmapDrawable(mResources, bitmapOrig);
+        }
+    }
+
+    private Uri getTempFileUri() {
+        return Uri.fromFile(new File(Environment.getExternalStorageDirectory(),
+                "tmp_icon_" + mPendingToggle + ".png"));
+
+    }
+
+    private String getIconFileName(int index) {
+        return "navbar_icon_" + index + ".png";
+    }
+
+    static synchronized void addToggle(Context context, String key) {
+        ArrayList<String> enabledToggles = getEnabledToggles(context);
+        if (enabledToggles.contains(key)) {
+            enabledToggles.remove(key);
+        }
         enabledToggles.add(key);
         setTogglesFromStringArray(context, enabledToggles);
     }
 
-    public static void removeToggle(Context context, String key) {
-        ArrayList<String> enabledToggles = getTogglesStringArray(context);
+    static synchronized ArrayList<String> getEnabledToggles(Context context) {
+        try {
+            ArrayList<String> userEnabledToggles = new ArrayList<String>();
+            String userToggles = Settings.System.getString(context.getContentResolver(),
+                    Settings.System.QUICK_TOGGLES);
+
+            String[] splitter = userToggles.split("\\|");
+            for (String toggle : splitter) {
+                userEnabledToggles.add(toggle);
+            }
+            if (!mTogglesAreSorted) {
+                Collections.sort(userEnabledToggles);
+                mTogglesAreSorted = true;
+            }
+            return userEnabledToggles;
+        } catch (Exception e) {
+            if (sToggles != null && sToggles.containsKey("default_toggles")) {
+                return sToggles.getStringArrayList("default_toggles");
+            }
+        }
+        return new ArrayList<String>();
+    }
+
+    static synchronized void setTogglesFromStringArray(Context c, List<String> enabledToggles) {
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < enabledToggles.size(); i++) {
+            final String _toggle = enabledToggles.get(i);
+            if (_toggle.isEmpty()) {
+                continue;
+            }
+            b.append(_toggle);
+            b.append("|");
+        }
+        if (b.length() > 0) {
+            if (b.charAt(b.length() - 1) == '!') {
+                b.deleteCharAt(b.length() - 1);
+            }
+        }
+        Log.d(TAG, "saving toggles:" + b.toString());
+        Settings.System.putString(c.getContentResolver(), Settings.System.QUICK_TOGGLES,
+                b.toString());
+    }
+
+    static synchronized void removeToggle(Context context, String key) {
+        ArrayList<String> enabledToggles = getEnabledToggles(context);
         enabledToggles.remove(key);
         setTogglesFromStringArray(context, enabledToggles);
     }
 
-    public static class TogglesLayout extends ListFragment {
-
-        private ListView mButtonList;
-        private ButtonAdapter mButtonAdapter;
-        private Context mContext;
-
-        /** Called when the activity is first created. */
-        @Override
-        public void onCreate(Bundle icicle) {
-            super.onCreate(icicle);
-
-            mContext = getActivity().getBaseContext();
-
+    static String lookupToggle(Context c, String ident) {
+        if (sToggles != null) {
+            return sToggles.getString(ident.toUpperCase());
         }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                Bundle savedInstanceState) {
-            // Inflate the layout for this fragment
-            View v = inflater.inflate(R.layout.order_power_widget_buttons_activity, container,
-                    false);
-
-            return v;
-        }
-
-        public void onActivityCreated(Bundle savedInstanceState) {
-            super.onActivityCreated(savedInstanceState);
-            mButtonList = this.getListView();
-            ((TouchInterceptor) mButtonList).setDropListener(mDropListener);
-            mButtonAdapter = new ButtonAdapter(mContext);
-            setListAdapter(mButtonAdapter);
-        };
-
-        @Override
-        public void onDestroy() {
-            ((TouchInterceptor) mButtonList).setDropListener(null);
-            setListAdapter(null);
-            super.onDestroy();
-        }
-
-        @Override
-        public void onResume() {
-            super.onResume();
-            // reload our buttons and invalidate the views for redraw
-            mButtonAdapter.reloadButtons();
-            mButtonList.invalidateViews();
-        }
-
-        private TouchInterceptor.DropListener mDropListener = new TouchInterceptor.DropListener() {
-            public void drop(int from, int to) {
-                // get the current button list
-                ArrayList<String> toggles = getTogglesStringArray(mContext);
-
-                // move the button
-                if (from < toggles.size()) {
-                    String toggle = toggles.remove(from);
-
-                    if (to <= toggles.size()) {
-                        toggles.add(to, toggle);
-
-                        // save our buttons
-                        setTogglesFromStringArray(mContext, toggles);
-
-                        // tell our adapter/listview to reload
-                        mButtonAdapter.reloadButtons();
-                        mButtonList.invalidateViews();
-                    }
-                }
-            }
-        };
-
-        private class ButtonAdapter extends BaseAdapter {
-            private Context mContext;
-            private Resources mSystemUIResources = null;
-            private LayoutInflater mInflater;
-            private ArrayList<Toggle> mToggles;
-
-            public ButtonAdapter(Context c) {
-                mContext = c;
-                mInflater = LayoutInflater.from(mContext);
-
-                PackageManager pm = mContext.getPackageManager();
-                if (pm != null) {
-                    try {
-                        mSystemUIResources = pm.getResourcesForApplication("com.android.systemui");
-                    } catch (Exception e) {
-                        mSystemUIResources = null;
-                        Log.e(TAG, "Could not load SystemUI resources", e);
-                    }
-                }
-
-                reloadButtons();
-            }
-
-            public void reloadButtons() {
-                ArrayList<String> toggles = getTogglesStringArray(mContext);
-
-                mToggles = new ArrayList<Toggle>();
-                for (String toggle : toggles) {
-                    mToggles.add(new Toggle(toggle, 0));
-                }
-            }
-
-            public int getCount() {
-                return mToggles.size();
-            }
-
-            public Object getItem(int position) {
-                return mToggles.get(position);
-            }
-
-            public long getItemId(int position) {
-                return position;
-            }
-
-            public View getView(int position, View convertView, ViewGroup parent) {
-                final View v;
-                if (convertView == null) {
-                    v = mInflater.inflate(R.layout.order_power_widget_button_list_item, null);
-                } else {
-                    v = convertView;
-                }
-
-                Toggle toggle = mToggles.get(position);
-                final TextView name = (TextView) v.findViewById(R.id.name);
-                name.setText(toggle.getId());
-                return v;
-            }
-        }
-
+        return ident;
     }
 
-    public static class Toggle {
-        private String mId;
-        private int mTitleResId;
+    public class ToggleButton {
+        String mClickAction;
+        String mLongPressAction;
+        String mIconURI;
+        String mClickFriendlyName;
+        String mLongPressFriendlyName;
+        Drawable mIcon;
+        boolean mPickingLongPress;
 
-        public Toggle(String id, int titleResId) {
-            mId = id;
-            mTitleResId = titleResId;
+        public ToggleButton(String clickaction, String longpress, String iconuri) {
+            mClickAction = clickaction;
+            mLongPressAction = longpress;
+            mIconURI = iconuri;
+            mClickFriendlyName = getProperSummary(mClickAction);
+            mLongPressFriendlyName = getProperSummary(mLongPressAction);
+            checkEmptyClick();
+        }
+        public void setClickAction(String click) {
+            mClickAction = click;
+            mClickFriendlyName = getProperSummary(mClickAction);
+            mIconURI = "";
+            checkEmptyClick();
         }
 
-        public String getId() {
-            return mId;
+        public void setLongPress(String action) {
+            mLongPressAction = action;
+            mLongPressFriendlyName = getProperSummary(mLongPressAction);
+            mIconURI = "";
+            checkEmptyClick();
         }
 
-        public int getTitleResId() {
-            return mTitleResId;
+        public void checkEmptyClick() {
+            // if user sets no click-action borrow longclick icon
+            mIcon = setIcon(mIconURI, "**null**".equals(mClickAction)
+                    ? mLongPressAction : mClickAction);
+        }
+
+        public void setPickLongPress(boolean pick) {
+            mPickingLongPress = pick;
+        }
+
+        public boolean getPickLongPress() {
+            return mPickingLongPress;
+        }
+
+        public void setIconURI(String uri) {
+            mIconURI = uri;
+            checkEmptyClick();
+        }
+
+        public String getClickName() {
+            return mClickFriendlyName;
+        }
+
+        public String getLongName() {
+            return mLongPressFriendlyName;
+        }
+
+        public Drawable getIcon() {
+            return mIcon;
+        }
+
+        public String getClickAction() {
+            return mClickAction;
+        }
+
+        public String getLongAction() {
+            return mLongPressAction;
+        }
+
+        public String getIconURI() {
+            return mIconURI;
         }
     }
 
-    public static void setTogglesFromStringArray(Context c, ArrayList<String> newGoodies) {
-        String newToggles = "";
-
-        for (String s : newGoodies)
-            newToggles += s + "|";
-
-        // remote last |
-        try {
-            newToggles = newToggles.substring(0, newToggles.length() - 1);
-        } catch (StringIndexOutOfBoundsException e) {
+    class SettingsObserver extends ContentObserver {
+        SettingsObserver(Handler handler) {
+            super(handler);
         }
 
-        Settings.System.putString(c.getContentResolver(), Settings.System.STATUSBAR_TOGGLES,
-                newToggles);
+        void observe() {
+            ContentResolver resolver = mContext.getContentResolver();
+            resolver.registerContentObserver(Settings.System
+                    .getUriFor(Settings.System.QUICK_TOGGLES),
+                    false, this);
+            updateSettings();
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            updateSettings();
+        }
     }
 
-    public static ArrayList<String> getTogglesStringArray(Context c) {
-        String clusterfuck = Settings.System.getString(c.getContentResolver(),
-                Settings.System.STATUSBAR_TOGGLES);
+    private void updateSettings() {
+        boolean screenshotRibbon = false;
+        boolean favoriteRibbon = false;
+        boolean customRibbon = false;
+        ContentResolver resolver = mContext.getContentResolver();
+        String currentToggles = Settings.System.getString(resolver, Settings.System.QUICK_TOGGLES);
+        ArrayList<String> leftSwipeToggles = Settings.System.getArrayList(mContentRes,
+                Settings.System.SWIPE_RIBBON_TOGGLES[0]);
+        ArrayList<String> rightSwipeToggles = Settings.System.getArrayList(mContentRes,
+                Settings.System.SWIPE_RIBBON_TOGGLES[1]);
+        ArrayList<String> bottomSwipeToggles = Settings.System.getArrayList(mContentRes,
+                Settings.System.SWIPE_RIBBON_TOGGLES[2]);
+        ArrayList<String> swipeToggles = new ArrayList<String>();
+        swipeToggles.addAll(leftSwipeToggles);
+        swipeToggles.addAll(rightSwipeToggles);
+        swipeToggles.addAll(bottomSwipeToggles);
 
-        if (clusterfuck == null) {
-            Log.e(TAG, "clusterfuck was null");
-            // return null;
-            clusterfuck = "WIFI|BT|GPS|ROTATE|SWAGGER|VIBRATE|SYNC|SILENT";
-        }
-
-        String[] togglesStringArray = clusterfuck.split("\\|");
-        ArrayList<String> iloveyou = new ArrayList<String>();
-        for (String s : togglesStringArray) {
-            if(s != null && s != "") {
-                Log.e(TAG, "adding: " + s);
-                iloveyou.add(s);
+        for (int i = 0; i < swipeToggles.size(); i++) {
+            if (swipeToggles.get(i).equals("FAVCONTACT")) {
+                favoriteRibbon = true;
+            }
+            if (swipeToggles.get(i).equals("SCREENSHOT")) {
+                screenshotRibbon = true;
+            }
+            if (swipeToggles.get(i).equals("CUSTOM")) {
+                customRibbon = true;
             }
         }
-        return iloveyou;
+
+        if (currentToggles == null)
+            currentToggles = "";
+        if (currentToggles != null) {
+            if (mFavContact != null) {
+                mFavContact.setEnabled(currentToggles.contains("FAVCONTACT") || favoriteRibbon);
+            }
+            if (mScreenshotDelay != null) {
+                mScreenshotDelay.setEnabled(currentToggles.contains("SCREENSHOT") || screenshotRibbon);
+            }
+            if (mCustomCat != null && mCustomButtons != null) {
+                boolean enabled = currentToggles.contains("CUSTOM") || customRibbon;
+                mCustomCat.setEnabled(enabled);
+                mCustomButtons.setEnabled(enabled);
+                for (int i = 0; i < 5; i++) {
+                    mContentRes.notifyChange(Settings.System
+                            .getUriFor(Settings.System.CUSTOM_PRESS_TOGGLE[i]), null);
+                }
+            }
+        }
     }
 }

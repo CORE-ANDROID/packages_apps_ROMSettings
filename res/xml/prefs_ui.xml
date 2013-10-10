@@ -1,80 +1,173 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen
-	xmlns:android="http://schemas.android.com/apk/res/android">
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
-	<PreferenceCategory
-		android:key="misc"
-		android:title="@string/misc_short">
 
-         <CheckBoxPreference
-			android:key="enable_volume_options"
-			android:title="@string/enable_volume_options" />
+    <PreferenceCategory
+        android:key="bootani"
+        android:title="@string/bootani_cat">
+
+        <Preference
+            android:key="custom_bootanimation"
+            android:title="@string/custom_bootanimation_title"
+            android:summary="@string/custom_bootanimation_summary" />
 
          <CheckBoxPreference
             android:key="disable_bootanimation"
             android:title="@string/disable_bootanimation_title" />
-    
-	<CheckBoxPreference
-	android:key="rotate_180"
-	android:title="@string/rotate_180_title"
-	android:summary="@string/rotate_180_summary" />
 
-	<CheckBoxPreference
-            android:key="recent_kill_all"
-            android:title="@string/recent_kill_all"
-            android:summary="@string/recent_kill_all_summary" />
+    </PreferenceCategory>
 
-	<CheckBoxPreference
-            android:key="ram_usage_bar"
-            android:title="@string/ram_bar"
-            android:summary="@string/ram_bar_summary" />
+    <PreferenceCategory
+        android:key="notification"
+        android:title="@string/notification_cat">
 
-	<CheckBoxPreference
+        <Preference
+            android:key="custom_carrier_label"
+            android:title="@string/custom_carrier_label_title" />
+            
+       	<CheckBoxPreference
+            android:key="notification_show_wifi_ssid"
+            android:title="@string/notification_show_wifi_ssid_title"
+            android:summary="@string/notification_show_wifi_ssid_summary"
+            android:defaultValue="false" />
+            
+        <!-- <CheckBoxPreference
+            android:key="statusbar_hidden"
+            android:title="@string/statusbar_hide_title"
+            android:summary="@string/statusbar_hide_summary" /> -->
+            
+        <ListPreference
+            android:key="notifications_behaviour"
+            android:title="@string/notification_behaviour_title"
+            android:entries="@array/notifs_beh_entries"
+            android:entryValues="@array/notifs_beh_values" />
+
+        <CheckBoxPreference
+            android:key="status_bar_notif_count"
+            android:title="@string/status_bar_notif_count_title"
+            android:summary="@string/status_bar_notif_count_summary"
+            android:defaultValue="false" />
+            
+        <ListPreference
+            android:key="status_bar_icon_opacity"
+            android:dialogTitle="@string/status_bar_icon_opacity"
+            android:title="@string/status_bar_icon_opacity"
+            android:summary="@string/status_bar_icon_opacity_summary"
+            android:entries="@array/status_bar_icon_opacity_entries"
+            android:entryValues="@array/status_bar_icon_opacity_values"
+            android:defaultValue="140" />
+
+        <CheckBoxPreference
             android:key="vibrate_notif_expand"
             android:title="@string/vibrate_notif_expand_title"
             android:summary="@string/vibrate_notif_expand_summary" />
 
-	<ListPreference
-        android:key="less_notification_sounds"
-        android:title="@string/less_notification_sounds_title"
-        android:summary="@string/less_notification_sounds_summary"
-        android:entries="@array/less_notification_sounds_entries"
-        android:entryValues="@array/less_notification_sounds_values" />
+		<CheckBoxPreference
+            android:key="ime_switcher"
+            android:title="@string/ime_switcher_title"
+            android:summary="@string/ime_switcher_summary"
+            android:defaultValue="true" />
 
-	<CheckBoxPreference
-			android:key="ime_switcher"
-			android:title="@string/ime_switcher_title"
-			android:summary="@string/ime_switcher_summary" />
+        <CheckBoxPreference
+            android:key="statusbar_brightness_slider"
+            android:title="@string/brightness_slider_title"
+            android:summary="@string/brightness_slider_summary" />
 
-	<CheckBoxPreference
-            android:key="use_alt_resolver"
-            android:title="@string/alt_resolver"
-            android:summary="@string/alt_resolver_summary"
+        <Preference
+            android:key="transparency_dialog"
+            android:title="@string/transparency_dialog_title" />
+            
+        <CheckBoxPreference
+            android:key="see_through"
+            android:title="@string/see_through_title"
+            android:summary="@string/see_through_summary" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="navbar"
+        android:title="@string/navbar_cat">
+
+
+      <!--  <CheckBoxPreference
+            android:key="recent_kill_all"
+            android:title="@string/recent_kill_all"
+            android:summary="@string/recent_kill_all_summary" />-->
+
+        <PreferenceScreen
+            android:key="recents_ram_bar"
+            android:fragment="com.aokp.romcontrol.fragments.RamBar"
+            android:title="@string/ram_bar" />
+
+       <!-- <CheckBoxPreference
+            android:key="kill_app_longpress_back"
+            android:title="@string/kill_app_longpress_back"
+            android:summary="@string/kill_app_longpress_back_summary" /> -->
+
+        <CheckBoxPreference
+            android:key="recent_google_assist"
+            android:title="@string/recent_google_assist_title"
+            android:summary="@string/recent_google_assist_summary" />
+            
+       <!-- <CheckBoxPreference
+            android:key="hide_extras"
+            android:title= "@string/hide_extras"
+            android:summary= "@string/hide_extras_summary" -->
             android:defaultValue="false" />
+            
+     </PreferenceCategory>
 
-    <CheckBoxPreference
-            android:key="mode_tabletui"
-            android:title="@string/tablet_ui"
-            android:summary="@string/tablet_ui_summary"
-            android:defaultValue="false" />
+     <PreferenceCategory
+            android:key="misc"
+            android:title="@string/misc_short">
+            
+     <CheckBoxPreference
+            android:key="system_power_crt_screen_off"
+            android:summary="@string/system_power_crt_screen_off_summary"
+            android:title="@string/system_power_crt_screen_off_title" />
 
-	<CheckBoxPreference
+        <CheckBoxPreference
+            android:key="system_power_crt_screen_on"
+            android:summary="@string/system_power_crt_screen_on_summary"
+            android:title="@string/system_power_crt_screen_on_title" />
+
+        <CheckBoxPreference
             android:key="show_overflow"
             android:title="@string/show_overflow_title"
             android:summary="@string/show_overflow_summary"
             android:defaultValue="false" />
 
-	<CheckBoxPreference
-            android:key="force_dualpanel"
-            android:title="@string/multipane_ui"
-            android:summary="@string/multipane_ui_summary"
+         <CheckBoxPreference
+            android:key="rotate_180"
+            android:title="@string/rotate_180_title"
+            android:summary="@string/rotate_180_summary" />
+            
+         <CheckBoxPreference
+            android:key="rotate_270"
+            android:title="@string/rotate_270_title"
+            android:summary="@string/rotate_270_summary"
+            android:defaultValue="true" />
+
+        <CheckBoxPreference
+            android:key="use_alt_resolver"
+            android:title="@string/alt_resolver"
+            android:summary="@string/alt_resolver_summary"
             android:defaultValue="false" />
 
-        <Preference
-            android:key="lcd_density_setup"
-            android:title="@string/lcd_density_title"
-            android:summary="@string/lcd_density_summary" />
-
-	</PreferenceCategory>
+        <CheckBoxPreference
+            android:key="wakeup_when_plugged_unplugged"
+            android:title="@string/wakeup_when_plugged_unplugged_title"
+            android:summary="@string/wakeup_when_plugged_unplugged_summary"
+            android:defaultValue="true" />
+            
+        <ListPreference
+            android:key="pref_low_battery_warning_policy"
+            android:title="@string/pref_low_battery_warning_policy_title"
+            android:dialogTitle="@string/pref_low_battery_warning_policy_dialog_title"
+            android:entries="@array/pref_low_battery_warning_policy_entries"
+            android:entryValues="@array/pref_low_battery_warning_policy_values"
+            android:defaultValue="0" />
+    </PreferenceCategory>
 
 </PreferenceScreen>

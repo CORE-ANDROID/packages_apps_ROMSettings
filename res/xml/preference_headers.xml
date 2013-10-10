@@ -1,31 +1,34 @@
 <preference-headers xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <header android:title="@string/user_interface" />
+
     <header
         android:id="@+id/user_interface"
         android:fragment="com.aokp.romcontrol.fragments.UserInterface"
         android:title="@string/general_ui"
         android:icon="@drawable/ic_rom_control_general_ui"
         android:summary="@string/header_summary_general_ui" />
+        
+    <header
+        android:id="@+id/nav_bar"
+        android:fragment="com.aokp.romcontrol.fragments.Navbar"
+        android:title="@string/nav_bar"
+        android:icon="@drawable/ic_rom_control_navigation_bar"
+        android:summary="@string/header_summary_navigation_bar" />
 
-	<header
+     <header
+        android:id="@+id/nav_ring"
+        android:fragment="com.aokp.romcontrol.fragments.NavRingTargets"
+        android:icon="@drawable/ic_rom_control_navigation_ring"
+        android:title="@string/interface_navring_settings_title"
+        android:summary="@string/interface_navring_settings_summary" />
+
+    <header
         android:id="@+id/lockscreen"
         android:fragment="com.aokp.romcontrol.fragments.Lockscreens"
         android:title="@string/lockscreen_options"
         android:icon="@drawable/ic_rom_control_lockscreens"
         android:summary="@string/header_summary_lockscreens" />
-
-	<header
-        android:id="@+id/weather"
-        android:fragment="com.aokp.romcontrol.fragments.Weather"
-        android:title="@string/weather"
-        android:summary="@string/header_summary_weather"
-        android:icon="@drawable/ic_rom_control_weather" />
-
-    <header
-        android:id="@+id/led"
-	android:fragment="com.aokp.romcontrol.fragments.LEDControl"
-	android:title="@string/led_options"
-	android:icon="@drawable/ic_rom_control_led"
-	android:summary="@string/header_summary_led" />
 
     <header
         android:id="@+id/power_menu"
@@ -34,58 +37,133 @@
         android:icon="@drawable/ic_rom_control_power_menu"
         android:summary="@string/header_summary_power_menu" />
 
+  <!--  <header
+        android:id="@+id/pie"
+        android:fragment="com.aokp.romcontrol.fragments.Pie"
+        android:title="@string/pie"
+        android:icon="@drawable/ic_settings_pie"
+        android:summary="@string/header_summary_pie" /> -->
+
+    <header
+        android:id="@+id/ribbon_targets"
+        android:fragment="com.aokp.romcontrol.fragments.RibbonTargets"
+        android:icon="@drawable/ic_rom_control_ribbon"
+        android:title="@string/ribbon_settings_title"
+        android:summary="@string/ribbon_settings_summary" />
+        
+  <!--  <header
+        android:id="@+id/hardware_keys"
+        android:fragment="com.aokp.romcontrol.fragments.HardwareKeys"
+        android:icon="@drawable/ic_rom_control_hardware_keys"
+        android:title="@string/hardware_keys_title" /> -->
+        
+    <header
+        android:id="@+id/keyboard"
+        android:fragment="com.aokp.romcontrol.fragments.Keyboard"
+        android:icon="@drawable/ic_rom_control_keyboard"
+        android:title="@string/keyboard_title" />
+
+    <!-- Xposed
+    <header
+        android:id="@+id/xposed_settings"
+        android:title="@string/xposed_settings_title"
+        android:fragment="com.aokp.romcontrol.fragments.XposedSettings"
+        android:icon="@drawable/ic_settings_xposed" /> -->
+
     <header
         android:id="@+id/statusbar"
         android:title="@string/header_statusbar" />
-    <header
-        android:id="@+id/statusbar_clock"
-        android:fragment="com.aokp.romcontrol.fragments.StatusBarClock"
-        android:summary="@string/header_summary_clock"
-        android:icon="@drawable/ic_rom_control_clock"
-        android:title="@string/clock" />
-    <header
-        android:id="@+id/statusbar_toggles"
-        android:fragment="com.aokp.romcontrol.fragments.StatusBarToggles"
-        android:icon="@drawable/ic_rom_control_toggles"
-        android:summary="@string/header_summary_toggles"
-        android:title="@string/toggles_layout" />
-
+        
     <header
         android:id="@+id/statusbar_battery"
         android:title="@string/battery"
         android:fragment="com.aokp.romcontrol.fragments.StatusBarBattery"
         android:icon="@drawable/ic_rom_control_battery"
         android:summary="@string/header_summary_battery" />
-
+        
+    <header
+        android:id="@+id/statusbar_clock"
+        android:fragment="com.aokp.romcontrol.fragments.StatusBarClock"
+        android:summary="@string/header_summary_clock"
+        android:icon="@drawable/ic_rom_control_clock"
+        android:title="@string/clock" />
+        
     <header
         android:id="@+id/statusbar_signal"
         android:title="@string/signal"
         android:fragment="com.aokp.romcontrol.fragments.StatusBarSignal"
         android:icon="@drawable/ic_rom_control_signal"
         android:summary="@string/header_summary_signal" />
+        
+   	<header
+        android:id="@+id/statusbar_toggles"
+        android:title="@string/toggles_layout"
+        android:fragment="com.aokp.romcontrol.fragments.StatusBarToggles"
+        android:icon="@drawable/ic_rom_control_quick_settings"
+        android:summary="@string/header_summary_toggles" />
+     
+    <header
+        android:id="@+id/system"
+        android:title="@string/header_system" />
+        
+    <header
+        android:id="@+id/init_d"
+        android:title="@string/pt_init_d"
+        android:summary="@string/ps_init_d"
+        android:fragment="com.aokp.romcontrol.fragments.InitD"
+        android:icon="@drawable/ic_rom_control_init_d"/>
+        
+    <header
+        android:id="@+id/animations"
+        android:title="@string/title_animation_controls"
+        android:summary="@string/header_summary_vibrations"
+        android:icon="@drawable/ic_rom_control_general_ui"
+        android:fragment="com.aokp.romcontrol.fragments.AnimationControls" />
 
     <header
-        android:id="@+id/navbar"
-        android:title="@string/header_navbar" />
-
-     <header
-        android:id="@+id/nav_bar"
-        android:fragment="com.aokp.romcontrol.fragments.Navbar"
-        android:title="@string/nav_bar"
-        android:icon="@drawable/ic_rom_control_navigation_bar"
-        android:summary="@string/header_summary_navigation_bar" />
+        android:id="@+id/led"
+        android:fragment="com.aokp.romcontrol.fragments.LEDControl"
+        android:title="@string/led_options"
+        android:icon="@drawable/ic_rom_control_led"
+        android:summary="@string/header_summary_led" />
+        
+    <header
+        android:id="@+id/propmodder_initd"
+        android:title="@string/propmodder_title"
+        android:fragment="com.aokp.romcontrol.fragments.PropModder"
+        android:summary="@string/propmodder_title_summary"
+        android:icon="@drawable/ic_rom_control_propmodder" />
 
     <header
-        android:id="@+id/tools"
-        android:title="@string/tools" />
+        android:id="@+id/spen"
+        android:fragment="com.aokp.romcontrol.fragments.SPenGestures"
+        android:title="@string/spen_options"
+        android:icon="@drawable/ic_rom_control_spen"
+        android:summary="@string/header_summary_spen" />
 
-    <header android:icon="@drawable/ic_rom_control_performance"
-            android:title="@string/performance">
+    <header
+        android:id="@+id/sound"
+        android:fragment="com.aokp.romcontrol.fragments.Sound"
+        android:title="@string/sound"
+        android:icon="@drawable/ic_rom_control_sound"
+        android:summary="@string/header_summary_sound" />
+
+    <header
+        android:id="@+id/vibrations"
+        android:title="@string/vibrations"
+        android:summary="@string/header_summary_vibrations"
+        android:icon="@drawable/ic_rom_control_vibrations" >
         <intent
                 android:action="android.intent.action.MAIN"
-                android:targetClass="com.aokp.romcontrol.fragments.performance.Performance"
+                android:targetClass="com.aokp.romcontrol.fragments.Vibrations"
                 android:targetPackage="com.aokp.romcontrol" />
     </header>
-
-
+    
+    <header android:title="@string/Extras" />
+    <header
+        android:id="@+id/about"
+        android:fragment="com.aokp.romcontrol.fragments.About"
+        android:title="@string/about_xehd"
+        android:icon="@drawable/ic_rom_settings_about"
+        android:summary="@string/about_xehd_summary" />
 </preference-headers>
