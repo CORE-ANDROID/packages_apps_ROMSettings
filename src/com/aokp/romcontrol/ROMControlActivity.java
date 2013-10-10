@@ -1,26 +1,20 @@
 
 package com.aokp.romcontrol;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-
+import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.os.RemoteException;
-import android.os.ServiceManager;
+import android.os.Vibrator;
 import android.preference.Preference;
-import android.preference.PreferenceActivity;
+import android.preference.PreferenceDrawerActivity;
 import android.preference.PreferenceFragment;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.IWindowManager;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -35,13 +29,17 @@ import android.widget.ListAdapter;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import com.aokp.romcontrol.service.BootService;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 
-public class ROMControlActivity extends PreferenceActivity implements ButtonBarHandler {
+public class ROMControlActivity extends PreferenceDrawerActivity implements ButtonBarHandler {
 
     private static final String TAG = "ROM_Control";
 
     private static boolean hasNotificationLed;
+    private static boolean hasSPen;
     private static String KEY_USE_ENGLISH_LOCALE = "use_english_locale";
 
     protected HashMap<Integer, Integer> mHeaderIndexMap = new HashMap<Integer, Integer>();
@@ -55,15 +53,14 @@ public class ROMControlActivity extends PreferenceActivity implements ButtonBarH
 
     Locale defaultLocale;
 
-    boolean mTablet;
+    Vibrator mVibrator;
     protected boolean isShortcut;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-
-        mTablet = Settings.System
-                .getBoolean(getContentResolver(), Settings.System.TABLET_UI, false);
         hasNotificationLed = getResources().getBoolean(R.bool.has_notification_led);
+        hasSPen = getResources().getBoolean(R.bool.config_stylusGestures);
+        mVibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         defaultLocale = Locale.getDefault();
         Log.i(TAG, "defualt locale: " + defaultLocale.getDisplayName());
         setLocale();
@@ -82,19 +79,44 @@ public class ROMControlActivity extends PreferenceActivity implements ButtonBarH
 
         if ("com.aokp.romcontrol.START_NEW_FRAGMENT".equals(getIntent().getAction())) {
             String className = getIntent().getStringExtra("aokp_fragment_name").toString();
-            if (!className.equals("com.aokp.romcontrol.ROMControlActivity")) {
+            Class<?> cls = null;
+            try {
+                cls = Class.forName(className);
+            } catch (ClassNotFoundException e1) {
+                // can't find the class at all, die
+                return;
+            }
+
+            try {
+                cls.asSubclass(ROMControlActivity.class);
+                return;
+            } catch (ClassCastException e) {
+                // fall through
+            }
+
+            try {
+                cls.asSubclass(Fragment.class);
                 Bundle b = new Bundle();
                 b.putBoolean("started_from_shortcut", true);
                 isShortcut = true;
                 startWithFragment(className, b, null, 0);
                 finish(); // close current activity
+                return;
+            } catch (ClassCastException e) {
+            }
+
+            try {
+                cls.asSubclass(Activity.class);
+                isShortcut = true;
+                Intent activity = new Intent(getApplicationContext(), cls);
+                activity.putExtra("started_from_shortcut", true);
+                startActivity(activity);
+                finish(); // close current activity
+                return;
+            } catch (ClassCastException e) {
             }
         }
 
-        if (!BootService.servicesStarted) {
-            getApplicationContext().startService(
-                    new Intent(getApplicationContext(), BootService.class));
-        }
     }
 
     @Override
@@ -134,9 +156,7 @@ public class ROMControlActivity extends PreferenceActivity implements ButtonBarH
                 recreate();
                 return true;
             case android.R.id.home:
-                Intent intent = new Intent(this, ROMControlActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                startActivity(intent);
+                onBackPressed();
                 return true;
             default:
                 return super.onContextItemSelected(item);
@@ -173,12 +193,19 @@ public class ROMControlActivity extends PreferenceActivity implements ButtonBarH
     @Override
     public void onBuildHeaders(List<Header> target) {
         loadHeadersFromResource(R.xml.preference_headers, target);
-        if (!hasNotificationLed) {
-            for (int i=0; i<target.size(); i++) {
-                Header header = target.get(i);
-                if (header.id == R.id.led) {
+        for (int i=0; i<target.size(); i++) {
+            Header header = target.get(i);
+            if (header.id == R.id.led) {
+                if (!hasNotificationLed) {
                     target.remove(i);
-                    break;
+                }
+            } else if (header.id == R.id.vibrations) {
+                if (mVibrator == null || !mVibrator.hasVibrator()) {
+                    target.remove(i);
+                }
+            } else if (header.id == R.id.spen) {
+                if (!hasSPen) {
+                    target.remove(i);
                 }
             }
         }
@@ -291,7 +318,7 @@ public class ROMControlActivity extends PreferenceActivity implements ButtonBarH
             }
         }
 
-        // Ignore the adapter provided by PreferenceActivity and substitute ours
+        // Ignore the adapter provided by PreferenceDrawerActivity and substitute ours
         // instead
         super.setListAdapter(new HeaderAdapter(this, mHeaders));
     }

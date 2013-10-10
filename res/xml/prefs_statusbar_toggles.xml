@@ -1,75 +1,114 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" 
-    xmlns:aokp="http://schemas.android.com/apk/res/com.aokp.romcontrol">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aokp="http://schemas.android.com/apk/res/com.aokp.romcontrol" >
 
-    <Preference
-        android:key="enabled_toggles"
-        android:summary="@string/enabled_toggles_summary"
-        android:title="@string/enabled_toggles_title" />
     <Preference
         android:key="toggles"
-        android:summary="@string/toggles_order_summary"
-        android:title="@string/toggles_order_title" />
+        android:title="@string/toggle_dialog_arrange_title" />
 
-	<CheckBoxPreference
-        android:key="toggles_haptic_feedback"
-        android:title="@string/toggles_enable_haptic_feedback_title"
-        android:summary="@string/toggles_enable_haptic_feedback_summary"
-        android:defaultValue="false" />
+    <ListPreference
+        android:entries="@array/toggles_style_entries"
+        android:entryValues="@array/toggles_style_values"
+        android:key="toggles_style"
+        android:summary="@string/toggles_style_summary"
+        android:title="@string/toggles_style_title" />
 
-    <com.scheffsblend.smw.Preferences.ImageListPreference
-        android:entries="@array/toggles_layout_entries"
-        android:entryValues="@array/toggles_layout_entries"
-        aokp:entryImages="@array/toggles_layout_images"
-        aokp:summaryImage="@drawable/toggle_layout_summary"
-        android:key="toggles_layout_preference"
-        android:title="@string/toggles_layout_title" />
+    <CheckBoxPreference
+        android:key="collapse_shade_all"
+        android:summary="@string/toggle_collapse_generic_summary"
+        android:title="@string/toggle_collapse_generic_title" />
+
+    <CheckBoxPreference
+        android:key="quick_toggle_vibrate"
+        android:summary="@string/toggle_vibrate_summary"
+        android:title="@string/toggle_vibrate_title" />
+
+    <ListPreference
+        android:entries="@array/toggles_per_row_entries"
+        android:entryValues="@array/toggles_per_row_values"
+        android:key="toggles_per_row"
+        android:summary="@string/toggles_per_row_summary"
+        android:title="@string/toggles_per_row_title" />
+
+	<!--<ListPreference
+        android:entries="@array/quicksettings_theme_style_entries"
+        android:entryValues="@array/quicksettings_theme_style_values"
+        android:key="quick_theme_style"
+        android:title="@string/quicksettings_theme_style"
+        android:summary="@string/quicksettings_theme_style_summary" /> -->
+
+    <Preference
+        android:key="toggle_fav_contact"
+        android:summary="@string/toggle_favcontact_summary"
+        android:title="@string/toggle_favcontact_title" />
+
+    <CheckBoxPreference
+        android:key="enable_fast_toggle"
+        android:summary="@string/toggle_enable_fasttoggle_summary"
+        android:title="@string/toggle_enable_fasttoggle_title" />
+
+    <ListPreference
+        android:entries="@array/choose_toggle_side_entries"
+        android:entryValues="@array/choose_toggle_side_values"
+        android:key="choose_fast_toggle_side"
+        android:summary="@string/toggle_choose_fasttoggle_side_summary"
+        android:title="@string/toggle_choose_fasttoggle_side_title" />
+        
+    <ListPreference
+        android:entries="@array/screenshot_delay_entries"
+        android:entryValues="@array/screenshot_delay_values"
+        android:key="screenshot_delay"
+        android:summary="@string/screenshot_delay_summary"
+        android:title="@string/screenshot_delay_title" />
+        
+    <PreferenceScreen	
+            android:id="@+id/carbon_notification_shortcuts"
+            android:fragment="com.aokp.romcontrol.fragments.NotificationShortcuts"
+            android:key="carbon_shortcuts_settings"
+            android:title="@string/notification_shortcuts_settings_title"
+            android:summary="@string/notification_shortcuts_settings_summary" />
 
     <PreferenceCategory
-        android:key="advanced_cat"
-        android:title="@string/advanced_settings" >
-        <ListPreference
-            android:entries="@array/toggle_style_entries"
-            android:entryValues="@array/toggle_style_values"
-            android:key="toggle_style"
-            android:summary="@string/toggle_style_summary"
-            android:title="@string/toggle_style_title" />
-
-        <CheckBoxPreference
-            android:key="settings_behavior"
-            android:title= "@string/title_settings_behavior"
-            android:summary= "@string/summary_settings_behavior_default"  />
-
-        <CheckBoxPreference
-            android:key="toggles_autohide"
-            android:title= "@string/title_toggles_autohide"
-            android:summary= "@string/summary_toggles_autohide"  />
-
-        <net.margaritov.preference.colorpicker.ColorPickerPreference
-            android:key="toggle_btn_enabled_color"
-            android:title="@string/toggle_btn_enabled_color_title"
-            android:defaultValue="#33B5E5" />
-
-        <net.margaritov.preference.colorpicker.ColorPickerPreference
-            android:key="toggle_btn_disabled_color"
-            android:title="@string/toggle_btn_disabled_color_title"
-            android:defaultValue="#4C4C4C" />
-
-        <com.aokp.romcontrol.widgets.SeekBarPreference
-            android:key="toggle_btn_alpha"
-            android:title="@string/toggle_button_alpha_title" />
-
-        <ListPreference
-            android:entries="@array/brightness_location_entries"
-            android:entryValues="@array/brightness_location_values"
-            android:key="brightness_location"
-            android:title="@string/brightness_location_title" />
+        android:key="custom_toggle"
+        android:title="@string/custom_toggle_cat">
 
         <Preference
-            android:key="reset_toggles"
-            android:summary="@string/reset_toggles_summary"
-            android:title="@string/reset_toggles_title" >
-        </Preference>
+            android:key="custom_toggle_help"
+            android:summary="@string/custom_help_summary"
+            android:title="@string/custom_help_title" />
+
+        <CheckBoxPreference
+            android:key="set_boot_action"
+            android:summary="@string/boot_action_summary"
+            android:title="@string/boot_action_title" />
+
+        <CheckBoxPreference
+            android:key="match_icon_action"
+            android:summary="@string/match_icon_action_summary"
+            android:title="@string/match_icon_action_title" />
+
+        <ListPreference
+            android:entries="@array/collapse_bar_entries"
+            android:entryValues="@array/collapse_bar_values"
+            android:key="collapse_bar"
+            android:title="@string/collapse_bar_title"
+            android:summary="@string/collapse_bar_summary" />
+
+        <ListPreference
+            android:entries="@array/custom_toggle_dclick_entries"
+            android:entryValues="@array/custom_toggle_dclick_values"
+            android:key="dclick_action"
+            android:title="@string/dclick_action_title"
+            android:summary="@string/dclick_action_summary" />
+
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="custom_buttons"
+        android:title="@string/custom_button_cat">
+
+        <com.aokp.romcontrol.widgets.CustomTogglePref
+            android:key="custom_toggle_pref" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>

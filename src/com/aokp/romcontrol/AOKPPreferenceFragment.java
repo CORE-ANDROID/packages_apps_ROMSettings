@@ -25,9 +25,14 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.preference.PreferenceActivity;
+import android.os.Vibrator;
+import android.preference.CheckBoxPreference;
+import android.preference.Preference;
+import android.preference.PreferenceDrawerActivity;
 import android.preference.PreferenceFragment;
 import android.provider.Settings;
+import android.telephony.TelephonyManager;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.widget.Button;
 
@@ -42,27 +47,63 @@ public class AOKPPreferenceFragment extends PreferenceFragment implements Dialog
     private SettingsDialogFragment mDialogFragment;
     protected ActionBar mActionBar;
     protected boolean mShortcutFragment;
-    protected boolean mTablet;
     protected boolean hasTorch;
     protected boolean hasHardwareButtons;
     protected boolean hasFastCharge;
     protected boolean hasColorTuning;
+    protected boolean hasVibration = false;
+    protected ContentResolver mContentRes;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mTablet = Settings.System.getBoolean(getContentResolver(), Settings.System.TABLET_UI, false);
         hasTorch = getResources().getBoolean(R.bool.has_torch);
         hasHardwareButtons = getResources().getBoolean(R.bool.has_hardware_buttons);
         hasFastCharge = getResources().getBoolean(R.bool.has_fast_charge);
         hasColorTuning = getResources().getBoolean(R.bool.has_color_tuning);
-        mContext = getActivity().getApplicationContext();
+        mContext = getActivity();
         mActionBar = getActivity().getActionBar();
+        mContentRes = getActivity().getContentResolver();
         if(getArguments() != null) {
             mShortcutFragment = getArguments().getBoolean("started_from_shortcut", false);
         }
         if(!mShortcutFragment)
             mActionBar.setDisplayHomeAsUpEnabled(true);
+
+        Vibrator mVibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        if (mVibrator != null && mVibrator.hasVibrator()) {
+            hasVibration = true;
+        }
+    }
+    
+    public static boolean isTablet(Context context) {
+        return Settings.System.getInt(context.getContentResolver(),
+                Settings.System.CURRENT_UI_MODE,0) == 1;
+    }
+
+    public static boolean isPhablet(Context context) {
+        return Settings.System.getInt(context.getContentResolver(),
+                Settings.System.CURRENT_UI_MODE,0) == 2;
+    }
+
+    public static boolean hasPhoneAbility(Context context)
+    {
+       TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+       if(telephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_NONE)
+           return false;
+
+       return true;
+    }
+
+    public static boolean isSW600DPScreen(Context context) {
+        DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
+        int widthPixels = displayMetrics.widthPixels;
+        float density = displayMetrics.density;
+        return ((widthPixels / density) >= 600);
+    }
+
+    public void setTitle(int resId) {
+        getActivity().setTitle(resId);
     }
 
     /*
@@ -254,15 +295,23 @@ public class AOKPPreferenceFragment extends PreferenceFragment implements Dialog
 
     public boolean startFragment(
             Fragment caller, String fragmentClass, int requestCode, Bundle extras) {
-        if (getActivity() instanceof PreferenceActivity) {
-            PreferenceActivity preferenceActivity = (PreferenceActivity) getActivity();
-            preferenceActivity.startPreferencePanel(fragmentClass, extras,
+        if (getActivity() instanceof PreferenceDrawerActivity) {
+            PreferenceDrawerActivity preferenceDrawerActivity = (PreferenceDrawerActivity) getActivity();
+            preferenceDrawerActivity.startPreferencePanel(fragmentClass, extras,
                     R.string.app_name, null, caller, requestCode);
             return true;
         } else {
-            Log.w(TAG, "Parent isn't PreferenceActivity, thus there's no way to launch the "
+            Log.w(TAG, "Parent isn't PreferenceDrawerActivity, thus there's no way to launch the "
                     + "given Fragment (name: " + fragmentClass + ", requestCode: " + requestCode
                     + ")");
+            return false;
+        }
+    }
+
+    protected boolean isCheckBoxPrefernceChecked(Preference p) {
+        if(p instanceof CheckBoxPreference) {
+            return ((CheckBoxPreference) p).isChecked();
+        } else {
             return false;
         }
     }
